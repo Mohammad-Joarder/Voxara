@@ -37,43 +37,18 @@ Add redirect URLs exactly as defined in `.env.example`.
 
 ```bash
 cp .env.example .env.local
+cp .env.example .env
 ```
 
-Populate all values in `.env.local`.
+Populate all values in **both** `.env.local` (Next.js) and `.env` (Prisma CLI).
 
-### Database connectivity notes (important)
-
-This project uses Prisma with Supabase in the standard split:
-
-- `DATABASE_URL`: **pooled** connection (Supabase “Transaction pooler”, commonly port `6543`)
-- `DIRECT_URL`: **direct** Postgres connection (Supabase “Direct”, commonly port `5432`)
-
-Prisma Migrate uses `DIRECT_URL`, while runtime queries typically use `DATABASE_URL`.
-
-If your corporate network blocks direct Postgres (`5432`) but allows the pooler (`6543`), this split is the practical fix.
-
-If **both** ports are blocked, use the Docker fallback below (local Postgres) for schema development, or connect from a network that allows outbound Postgres.
+`DATABASE_URL` should be your Supabase Postgres connection string from **Project Settings → Database**.
 
 ## 6) Run Prisma migration
 
 ```bash
 npx prisma generate
 npx prisma migrate dev
-```
-
-## 6b) Docker Postgres fallback (local schema dev)
-
-If you cannot reach Supabase Postgres from your laptop, you can still run Prisma against a local Postgres:
-
-```bash
-docker compose up -d
-```
-
-Then set both URLs to the same local connection string in `.env` / `.env.local`:
-
-```env
-DATABASE_URL=postgresql://postgres:postgres@localhost:5432/voxara?sslmode=disable
-DIRECT_URL=postgresql://postgres:postgres@localhost:5432/voxara?sslmode=disable
 ```
 
 ## 7) Run local development

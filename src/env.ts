@@ -4,7 +4,6 @@ import { z } from 'zod'
 export const env = createEnv({
   server: {
     DATABASE_URL: z.string().url('DATABASE_URL must be a valid PostgreSQL URL'),
-    DIRECT_URL: z.string().url('DIRECT_URL must be a valid PostgreSQL URL'),
     SUPABASE_SERVICE_ROLE_KEY: z
       .string()
       .min(1, 'SUPABASE_SERVICE_ROLE_KEY is required'),
@@ -37,7 +36,6 @@ export const env = createEnv({
   },
   runtimeEnv: {
     DATABASE_URL: process.env.DATABASE_URL,
-    DIRECT_URL: process.env.DIRECT_URL,
     SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY,
     ENCRYPTION_KEY: process.env.ENCRYPTION_KEY,
     YOUTUBE_CLIENT_ID: process.env.YOUTUBE_CLIENT_ID,

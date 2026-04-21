@@ -10,7 +10,6 @@
 - [x] Reusable UI components implemented: Button, Input, Badge, Card, Spinner, Toast, EmptyState, StatCard
 - [x] Middleware implemented for `/dashboard/**` and protected `/api/**` routes, with callback/health exceptions
 - [x] Environment configuration delivered: `.env.example` and `src/env.ts` with t3-env validation
-- [x] Prisma datasource updated for Supabase-friendly connectivity (`DATABASE_URL` + `DIRECT_URL`) and optional local Docker Postgres fallback (`docker-compose.yml`)
 - [x] Tooling config delivered: `package.json`, `tsconfig.json`, `eslint.config.js`, `.gitignore`
 - [x] Vercel deployment config delivered (`vercel.json`) with build command, env refs, and multi-region setup
 - [x] Setup and deployment documentation completed in `README.md`
