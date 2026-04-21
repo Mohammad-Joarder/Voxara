@@ -1,0 +1,24 @@
+{
+  "framework": "nextjs",
+  "buildCommand": "prisma generate && next build",
+  "regions": ["iad1", "fra1"],
+  "env": {
+    "NEXT_PUBLIC_SUPABASE_URL": "@next_public_supabase_url",
+    "NEXT_PUBLIC_SUPABASE_ANON_KEY": "@next_public_supabase_anon_key",
+    "SUPABASE_SERVICE_ROLE_KEY": "@supabase_service_role_key",
+    "DATABASE_URL": "@database_url",
+    "DIRECT_URL": "@direct_url",
+    "ENCRYPTION_KEY": "@encryption_key",
+    "YOUTUBE_CLIENT_ID": "@youtube_client_id",
+    "YOUTUBE_CLIENT_SECRET": "@youtube_client_secret",
+    "YOUTUBE_REDIRECT_URI": "@youtube_redirect_uri",
+    "TIKTOK_CLIENT_ID": "@tiktok_client_id",
+    "TIKTOK_CLIENT_SECRET": "@tiktok_client_secret",
+    "TIKTOK_REDIRECT_URI": "@tiktok_redirect_uri",
+    "INSTAGRAM_CLIENT_ID": "@instagram_client_id",
+    "INSTAGRAM_CLIENT_SECRET": "@instagram_client_secret",
+    "INSTAGRAM_REDIRECT_URI": "@instagram_redirect_uri",
+    "NEXT_PUBLIC_APP_URL": "@next_public_app_url",
+    "NEXTAUTH_SECRET": "@nextauth_secret"
+  }
+}

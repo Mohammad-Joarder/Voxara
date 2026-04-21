@@ -1,0 +1,293 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum PlanTier {
+  FREE
+  STARTER
+  GROWTH
+  SCALE
+  ENTERPRISE
+}
+
+enum Platform {
+  YOUTUBE
+  TIKTOK
+  INSTAGRAM
+}
+
+enum ContentType {
+  VIDEO
+  REEL
+  SHORT
+  STORY
+  POST
+}
+
+enum Sentiment {
+  POSITIVE
+  NEGATIVE
+  NEUTRAL
+  AMBIGUOUS
+}
+
+enum IntentLevel {
+  NONE
+  INTEREST
+  STRONG
+  POST_PURCHASE
+}
+
+enum ImpactLevel {
+  HIGH
+  MEDIUM
+  LOW
+}
+
+enum AlertType {
+  SENTIMENT_SPIKE
+  QUOTA_EXHAUSTED
+  SYNC_FAILED
+  INSIGHT_READY
+  GENERAL
+}
+
+enum AlertSeverity {
+  INFO
+  WARNING
+  HIGH
+  CRITICAL
+}
+
+enum SyncType {
+  SCHEDULED
+  BACKFILL
+  MANUAL
+  WEBHOOK
+}
+
+enum IngestionStatus {
+  RUNNING
+  SUCCESS
+  FAILED
+  QUOTA_EXCEEDED
+}
+
+model Creator {
+  id                String             @id @default(cuid())
+  email             String             @unique
+  displayName       String
+  avatarUrl         String?
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+  consentAiAnalysis Boolean            @default(false)
+  consentAcceptedAt DateTime?
+  dataRetentionDays Int                @default(365)
+  stripeCustomerId  String?
+  planTier          PlanTier           @default(FREE)
+  connectedAccounts ConnectedAccount[]
+  content           Content[]
+  comments          Comment[]
+  sentimentResults  SentimentResult[]
+  ctaExtractions    CtaExtraction[]
+  intentSignals     IntentSignal[]
+  insightCards      InsightCard[]
+  alerts            Alert[]
+  ingestionLogs     IngestionLog[]
+
+  @@map("creators")
+}
+
+model ConnectedAccount {
+  id                    String         @id @default(cuid())
+  creatorId             String         @map("creator_id")
+  platform              Platform
+  platformUserId        String         @map("platform_user_id")
+  platformUsername      String         @map("platform_username")
+  accessTokenEncrypted  String         @map("access_token_encrypted")
+  refreshTokenEncrypted String         @map("refresh_token_encrypted")
+  scopesGranted         String[]       @default([]) @map("scopes_granted")
+  tokenExpiresAt        DateTime       @map("token_expires_at")
+  lastSyncedAt          DateTime?      @map("last_synced_at")
+  followerCount         Int?           @map("follower_count")
+  channelName           String?        @map("channel_name")
+  isActive              Boolean        @default(true) @map("is_active")
+  createdAt             DateTime       @default(now()) @map("created_at")
+  creator               Creator        @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+  content               Content[]
+  ingestionLogs         IngestionLog[]
+
+  @@unique([creatorId, platform, platformUserId])
+  @@map("connected_accounts")
+}
+
+model Content {
+  id                 String           @id @default(cuid())
+  creatorId          String           @map("creator_id")
+  connectedAccountId String           @map("connected_account_id")
+  platform           Platform
+  platformContentId  String           @map("platform_content_id")
+  title              String
+  description        String?
+  publishedAt        DateTime         @map("published_at")
+  durationSeconds    Int?             @map("duration_seconds")
+  viewCount          Int              @default(0) @map("view_count")
+  likeCount          Int              @default(0) @map("like_count")
+  commentCount       Int              @default(0) @map("comment_count")
+  thumbnailUrl       String?          @map("thumbnail_url")
+  contentType        ContentType      @default(VIDEO) @map("content_type")
+  tags               String[]         @default([])
+  createdAt          DateTime         @default(now()) @map("created_at")
+  updatedAt          DateTime         @updatedAt @map("updated_at")
+  creator            Creator          @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+  connectedAccount   ConnectedAccount @relation(fields: [connectedAccountId], references: [id], onDelete: Cascade)
+  comments           Comment[]
+
+  @@unique([platform, platformContentId])
+  @@index([creatorId, publishedAt(sort: Desc)])
+  @@map("content")
+}
+
+model Comment {
+  id                String           @id @default(cuid())
+  contentId         String           @map("content_id")
+  creatorId         String           @map("creator_id")
+  platform          Platform
+  platformCommentId String           @map("platform_comment_id")
+  authorName        String           @map("author_name")
+  authorId          String?          @map("author_id")
+  text              String
+  likeCount         Int              @default(0) @map("like_count")
+  publishedAt       DateTime         @map("published_at")
+  isReply           Boolean          @default(false) @map("is_reply")
+  parentCommentId   String?          @map("parent_comment_id")
+  language          String?
+  isFiltered        Boolean          @default(false) @map("is_filtered")
+  filterReason      String?          @map("filter_reason")
+  createdAt         DateTime         @default(now()) @map("created_at")
+  content           Content          @relation(fields: [contentId], references: [id], onDelete: Cascade)
+  creator           Creator          @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+  parentComment     Comment?         @relation("CommentReplies", fields: [parentCommentId], references: [id], onDelete: SetNull)
+  replies           Comment[]        @relation("CommentReplies")
+  sentimentResult   SentimentResult?
+  ctaExtraction     CtaExtraction?
+  intentSignal      IntentSignal?
+
+  @@unique([platform, platformCommentId])
+  @@index([creatorId, publishedAt(sort: Desc)])
+  @@index([contentId, publishedAt(sort: Desc)])
+  @@map("comments")
+}
+
+model SentimentResult {
+  id              String    @id @default(cuid())
+  commentId       String    @unique @map("comment_id")
+  creatorId       String    @map("creator_id")
+  sentiment       Sentiment
+  confidence      Float
+  emotionJoy      Float?    @map("emotion_joy")
+  emotionSadness  Float?    @map("emotion_sadness")
+  emotionAnger    Float?    @map("emotion_anger")
+  emotionFear     Float?    @map("emotion_fear")
+  emotionSurprise Float?    @map("emotion_surprise")
+  emotionDisgust  Float?    @map("emotion_disgust")
+  modelVersion    String    @map("model_version")
+  processedAt     DateTime  @map("processed_at")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  comment         Comment   @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  creator         Creator   @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+
+  @@index([creatorId, processedAt(sort: Desc)])
+  @@map("sentiment_results")
+}
+
+model CtaExtraction {
+  id                  String   @id @default(cuid())
+  commentId           String   @unique @map("comment_id")
+  creatorId           String   @map("creator_id")
+  explicitSuggestions Json     @map("explicit_suggestions")
+  implicitSignals     Json     @map("implicit_signals")
+  engagementDrivers   Json     @map("engagement_drivers")
+  clusterId           String?  @map("cluster_id")
+  clusterLabel        String?  @map("cluster_label")
+  processedAt         DateTime @map("processed_at")
+  createdAt           DateTime @default(now()) @map("created_at")
+  comment             Comment  @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  creator             Creator  @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+
+  @@map("cta_extractions")
+}
+
+model IntentSignal {
+  id                String      @id @default(cuid())
+  commentId         String      @unique @map("comment_id")
+  creatorId         String      @map("creator_id")
+  intentLevel       IntentLevel @map("intent_level")
+  confidence        Float
+  extractedEntities Json        @map("extracted_entities")
+  processedAt       DateTime    @map("processed_at")
+  createdAt         DateTime    @default(now()) @map("created_at")
+  comment           Comment     @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  creator           Creator     @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+
+  @@index([creatorId, confidence(sort: Desc)])
+  @@map("intent_signals")
+}
+
+model InsightCard {
+  id              String      @id @default(cuid())
+  creatorId       String      @map("creator_id")
+  recommendation  String
+  evidence        String
+  impactLevel     ImpactLevel @map("impact_level")
+  actionTimeframe String      @map("action_timeframe")
+  metricContext   String?     @map("metric_context")
+  isDismissed     Boolean     @default(false) @map("is_dismissed")
+  dismissedAt     DateTime?   @map("dismissed_at")
+  generatedAt     DateTime    @map("generated_at")
+  createdAt       DateTime    @default(now()) @map("created_at")
+  creator         Creator     @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+
+  @@map("insight_cards")
+}
+
+model Alert {
+  id          String        @id @default(cuid())
+  creatorId   String        @map("creator_id")
+  alertType   AlertType     @map("alert_type")
+  title       String
+  description String
+  severity    AlertSeverity
+  isRead      Boolean       @default(false) @map("is_read")
+  readAt      DateTime?     @map("read_at")
+  metadata    Json?
+  createdAt   DateTime      @default(now()) @map("created_at")
+  creator     Creator       @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+
+  @@index([creatorId, isRead, createdAt(sort: Desc)])
+  @@map("alerts")
+}
+
+model IngestionLog {
+  id                 String          @id @default(cuid())
+  connectedAccountId String          @map("connected_account_id")
+  creatorId          String          @map("creator_id")
+  platform           Platform
+  syncType           SyncType        @map("sync_type")
+  status             IngestionStatus
+  commentsIngested   Int             @default(0) @map("comments_ingested")
+  errorMessage       String?         @map("error_message")
+  startedAt          DateTime        @map("started_at")
+  completedAt        DateTime?       @map("completed_at")
+  createdAt          DateTime        @default(now()) @map("created_at")
+  connectedAccount   ConnectedAccount @relation(fields: [connectedAccountId], references: [id], onDelete: Cascade)
+  creator            Creator         @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+
+  @@map("ingestion_logs")
+}
