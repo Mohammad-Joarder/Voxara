@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 
 import { env } from '@/env'
 import { prisma } from '@/lib/prisma'
-import { createSupabaseServerClient } from '@/lib/supabase'
+import { createSupabaseServerClient } from '@/lib/supabase-server'
 
 function redirectTo(path: string) {
   return NextResponse.redirect(new URL(path, env.NEXT_PUBLIC_APP_URL))

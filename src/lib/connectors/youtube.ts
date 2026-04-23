@@ -1,4 +1,4 @@
-import { env } from '@/env'
+import { getYouTubeOAuth } from '@/lib/connectors/oauth-env'
 import type { OAuthTokens, PlatformConnector, PlatformProfile } from '@/lib/connectors/types'
 
 const AUTH_URL = 'https://accounts.google.com/o/oauth2/v2/auth'
@@ -39,9 +39,10 @@ async function parseError(response: Response): Promise<string> {
 
 export class YouTubeConnector implements PlatformConnector {
   getAuthUrl(state: string): string {
+    const o = getYouTubeOAuth()
     const params = new URLSearchParams({
-      client_id: env.YOUTUBE_CLIENT_ID,
-      redirect_uri: env.YOUTUBE_REDIRECT_URI,
+      client_id: o.clientId,
+      redirect_uri: o.redirectUri,
       response_type: 'code',
       access_type: 'offline',
       prompt: 'consent',
@@ -53,14 +54,15 @@ export class YouTubeConnector implements PlatformConnector {
   }
 
   async exchangeCode(code: string): Promise<OAuthTokens> {
+    const o = getYouTubeOAuth()
     const response = await fetch(TOKEN_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body: new URLSearchParams({
         code,
-        client_id: env.YOUTUBE_CLIENT_ID,
-        client_secret: env.YOUTUBE_CLIENT_SECRET,
-        redirect_uri: env.YOUTUBE_REDIRECT_URI,
+        client_id: o.clientId,
+        client_secret: o.clientSecret,
+        redirect_uri: o.redirectUri,
         grant_type: 'authorization_code'
       })
     })
@@ -79,13 +81,14 @@ export class YouTubeConnector implements PlatformConnector {
   }
 
   async refreshTokens(refreshToken: string): Promise<OAuthTokens> {
+    const o = getYouTubeOAuth()
     const response = await fetch(TOKEN_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body: new URLSearchParams({
         refresh_token: refreshToken,
-        client_id: env.YOUTUBE_CLIENT_ID,
-        client_secret: env.YOUTUBE_CLIENT_SECRET,
+        client_id: o.clientId,
+        client_secret: o.clientSecret,
         grant_type: 'refresh_token'
       })
     })

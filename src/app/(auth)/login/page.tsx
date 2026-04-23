@@ -2,15 +2,16 @@
 
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { FormEvent, useEffect, useMemo, useState } from 'react'
+import { FormEvent, Suspense, useEffect, useMemo, useState } from 'react'
 
+import { VoxaraMark } from '@/components/brand/VoxaraMark'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { Input } from '@/components/ui/Input'
 import { useToast } from '@/components/ui/Toast'
-import { createSupabaseBrowserClient } from '@/lib/supabase'
+import { createSupabaseBrowserClient } from '@/lib/supabase-client'
 
-export default function LoginPage() {
+function LoginContent() {
   const [email, setEmail] = useState('')
   const [loading, setLoading] = useState(false)
   const [googleLoading, setGoogleLoading] = useState(false)
@@ -99,11 +100,14 @@ export default function LoginPage() {
   }
 
   return (
-    <main className='flex min-h-screen items-center justify-center bg-surface-50 px-4 py-10'>
-      <Card className='w-full max-w-md' padding='lg'>
-        <h1 className='text-2xl font-semibold text-surface-900'>Welcome to Voxara</h1>
-        <p className='mt-2 text-sm text-surface-600'>
-          Sign in to access your AI influencer analytics dashboard.
+    <main className='flex min-h-screen items-center justify-center bg-gradient-to-b from-surface-50 to-surface-100/80 px-4 py-10'>
+      <Card className='w-full max-w-md border-surface-200/80 shadow-soft' padding='lg'>
+        <div className='mb-6 flex flex-col items-center gap-3 text-center sm:flex-row sm:items-start sm:text-left'>
+          <VoxaraMark size='lg' showWordmark priority className='sm:items-start' />
+        </div>
+        <h1 className='text-2xl font-semibold tracking-tight text-brand-600'>Welcome back</h1>
+        <p className='mt-2 text-sm leading-relaxed text-surface-600'>
+          Sign in to your dashboard and hear what your audience is really saying.
         </p>
         <form className='mt-6 space-y-4' onSubmit={handleMagicLink}>
           <Input
@@ -140,5 +144,19 @@ export default function LoginPage() {
         </p>
       </Card>
     </main>
+  )
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense
+      fallback={
+        <main className='flex min-h-screen items-center justify-center bg-surface-50 px-4 py-10 text-sm text-surface-500'>
+          Loading…
+        </main>
+      }
+    >
+      <LoginContent />
+    </Suspense>
   )
 }

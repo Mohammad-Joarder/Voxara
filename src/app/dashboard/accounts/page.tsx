@@ -31,22 +31,35 @@ export default function AccountsPage() {
   }, [])
 
   return (
-    <Card title='Connected accounts'>
-      <div className='space-y-3'>
+    <Card
+      className='border-surface-200/80 shadow-soft'
+      title='Connected accounts'
+      description='Social accounts linked for ingestion and analytics'
+    >
+      <div className='space-y-2'>
         {accounts.length === 0 ? (
           <p className='text-sm text-surface-600'>No connected accounts yet.</p>
         ) : (
           accounts.map((account) => (
-            <div key={account.id} className='rounded-lg border border-surface-200 px-3 py-2 text-sm'>
-              {account.platform} · @{account.platformUsername} ·{' '}
-              {account.isActive ? 'Active' : 'Disconnected'}
+            <div
+              key={account.id}
+              className='flex flex-wrap items-center justify-between gap-2 rounded-xl border border-surface-200/80 bg-surface-50/50 px-4 py-3 text-sm'
+            >
+              <span className='font-medium text-surface-900'>{account.platform}</span>
+              <span className='text-surface-600'>@{account.platformUsername}</span>
+              <span className={account.isActive ? 'text-emerald-700' : 'text-amber-700'}>
+                {account.isActive ? 'Active' : 'Disconnected'}
+              </span>
             </div>
           ))
         )}
       </div>
-      <div className='mt-4'>
+      <div className='mt-5 flex flex-wrap gap-2'>
+        <Link href='/dashboard/integrations'>
+          <Button variant='primary'>YouTube & integrations</Button>
+        </Link>
         <Link href='/onboarding'>
-          <Button variant='secondary'>Manage connections</Button>
+          <Button variant='secondary'>TikTok / Instagram setup</Button>
         </Link>
       </div>
     </Card>

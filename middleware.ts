@@ -38,27 +38,26 @@ async function updateSession(request: NextRequest) {
           request.cookies.set({
             name,
             value,
-            ...(options as Parameters<typeof response.cookies.set>[0])
+            ...options
           })
           response = NextResponse.next({ request })
           response.cookies.set({
             name,
             value,
-            ...(options as Parameters<typeof response.cookies.set>[0])
+            ...options
           })
         },
         remove(name: string, options: Record<string, unknown>) {
           request.cookies.set({
             name,
             value: '',
-            ...(options as Parameters<typeof response.cookies.set>[0]),
-            maxAge: 0
+            ...options
           })
           response = NextResponse.next({ request })
           response.cookies.set({
             name,
             value: '',
-            ...(options as Parameters<typeof response.cookies.set>[0]),
+            ...options,
             maxAge: 0
           })
         }

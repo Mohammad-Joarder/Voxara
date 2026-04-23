@@ -1,8 +1,9 @@
 'use client'
 
 import { useRouter, useSearchParams } from 'next/navigation'
-import { useEffect, useMemo, useState } from 'react'
+import { Suspense, useEffect, useMemo, useState } from 'react'
 
+import { VoxaraMark } from '@/components/brand/VoxaraMark'
 import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
@@ -34,7 +35,7 @@ function PlatformIcon({ platform }: { platform: ConnectedAccount['platform'] }) 
   return <svg viewBox='0 0 24 24' className='h-6 w-6 fill-pink-600'><path d='M7 2h10a5 5 0 0 1 5 5v10a5 5 0 0 1-5 5H7a5 5 0 0 1-5-5V7a5 5 0 0 1 5-5zm0 2a3 3 0 0 0-3 3v10a3 3 0 0 0 3 3h10a3 3 0 0 0 3-3V7a3 3 0 0 0-3-3H7zm10.5 1.5a1 1 0 1 1 0 2 1 1 0 0 1 0-2zM12 7a5 5 0 1 1 0 10 5 5 0 0 1 0-10zm0 2a3 3 0 1 0 0 6 3 3 0 0 0 0-6z' /></svg>
 }
 
-export default function OnboardingPage() {
+function OnboardingContent() {
   const [step, setStep] = useState<1 | 2>(1)
   const [consentAi, setConsentAi] = useState(false)
   const [consentRetention, setConsentRetention] = useState(false)
@@ -145,10 +146,17 @@ export default function OnboardingPage() {
   }
 
   return (
-    <main className='mx-auto flex min-h-screen max-w-4xl items-center justify-center px-4 py-10'>
-      <Card className='w-full' padding='lg'>
-        <div className='mb-6 flex items-center justify-between'>
-          <h1 className='text-2xl font-semibold text-surface-900'>Onboarding</h1>
+    <main className='mx-auto flex min-h-screen max-w-4xl items-center justify-center bg-gradient-to-b from-surface-50 to-surface-100/80 px-4 py-10'>
+      <Card className='w-full border-surface-200/80 shadow-soft' padding='lg'>
+        <div className='mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between'>
+          <div className='flex items-center gap-3'>
+            <VoxaraMark size='md' showWordmark />
+            <div className='h-8 w-px bg-surface-200' aria-hidden />
+            <div>
+              <h1 className='text-xl font-semibold tracking-tight text-brand-600 sm:text-2xl'>Onboarding</h1>
+              <p className='text-xs text-surface-500'>Set up your workspace</p>
+            </div>
+          </div>
           <Badge variant='default'>Step {step} of 2</Badge>
         </div>
 
@@ -229,5 +237,19 @@ export default function OnboardingPage() {
         )}
       </Card>
     </main>
+  )
+}
+
+export default function OnboardingPage() {
+  return (
+    <Suspense
+      fallback={
+        <main className='mx-auto flex min-h-screen max-w-4xl items-center justify-center px-4 py-10 text-sm text-surface-500'>
+          Loading…
+        </main>
+      }
+    >
+      <OnboardingContent />
+    </Suspense>
   )
 }

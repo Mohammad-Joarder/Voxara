@@ -106,7 +106,9 @@ export async function GET(request: NextRequest, { params }: Params) {
       maxAge: 0
     })
 
-    return redirectTo('/dashboard/accounts?connected=true')
+    const nextPath =
+      platform === 'YOUTUBE' ? '/dashboard/integrations?connected=true' : '/dashboard/accounts?connected=true'
+    return redirectTo(nextPath)
   } catch (error) {
     const message = error instanceof Error ? error.message : 'OAuth callback failed'
     return redirectWithError(message)

@@ -1,4 +1,4 @@
-import { env } from '@/env'
+import { getInstagramOAuth } from '@/lib/connectors/oauth-env'
 import type { OAuthTokens, PlatformConnector, PlatformProfile } from '@/lib/connectors/types'
 
 const AUTH_URL = 'https://api.instagram.com/oauth/authorize'
@@ -34,9 +34,10 @@ async function parseError(response: Response): Promise<string> {
 
 export class InstagramConnector implements PlatformConnector {
   getAuthUrl(state: string): string {
+    const o = getInstagramOAuth()
     const params = new URLSearchParams({
-      client_id: env.INSTAGRAM_CLIENT_ID,
-      redirect_uri: env.INSTAGRAM_REDIRECT_URI,
+      client_id: o.clientId,
+      redirect_uri: o.redirectUri,
       response_type: 'code',
       scope: SCOPES.join(','),
       state
@@ -46,13 +47,14 @@ export class InstagramConnector implements PlatformConnector {
   }
 
   async exchangeCode(code: string): Promise<OAuthTokens> {
+    const o = getInstagramOAuth()
     const shortTokenResponse = await fetch(TOKEN_URL, {
       method: 'POST',
       body: new URLSearchParams({
-        client_id: env.INSTAGRAM_CLIENT_ID,
-        client_secret: env.INSTAGRAM_CLIENT_SECRET,
+        client_id: o.clientId,
+        client_secret: o.clientSecret,
         grant_type: 'authorization_code',
-        redirect_uri: env.INSTAGRAM_REDIRECT_URI,
+        redirect_uri: o.redirectUri,
         code
       })
     })
@@ -65,7 +67,7 @@ export class InstagramConnector implements PlatformConnector {
     const longTokenResponse = await fetch(
       `${LONG_LIVED_URL}?${new URLSearchParams({
         grant_type: 'ig_exchange_token',
-        client_secret: env.INSTAGRAM_CLIENT_SECRET,
+        client_secret: o.clientSecret,
         access_token: shortToken.access_token
       }).toString()}`
     )

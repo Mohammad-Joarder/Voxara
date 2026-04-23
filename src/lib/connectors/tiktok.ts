@@ -1,4 +1,4 @@
-import { env } from '@/env'
+import { getTikTokOAuth } from '@/lib/connectors/oauth-env'
 import type { OAuthTokens, PlatformConnector, PlatformProfile } from '@/lib/connectors/types'
 
 const AUTH_URL = 'https://www.tiktok.com/v2/auth/authorize/'
@@ -33,9 +33,10 @@ async function parseError(response: Response): Promise<string> {
 
 export class TikTokConnector implements PlatformConnector {
   getAuthUrl(state: string): string {
+    const o = getTikTokOAuth()
     const params = new URLSearchParams({
-      client_key: env.TIKTOK_CLIENT_ID,
-      redirect_uri: env.TIKTOK_REDIRECT_URI,
+      client_key: o.clientKey,
+      redirect_uri: o.redirectUri,
       response_type: 'code',
       scope: SCOPES.join(','),
       state
@@ -45,17 +46,18 @@ export class TikTokConnector implements PlatformConnector {
   }
 
   async exchangeCode(code: string): Promise<OAuthTokens> {
+    const o = getTikTokOAuth()
     const response = await fetch(TOKEN_URL, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded'
       },
       body: new URLSearchParams({
-        client_key: env.TIKTOK_CLIENT_ID,
-        client_secret: env.TIKTOK_CLIENT_SECRET,
+        client_key: o.clientKey,
+        client_secret: o.clientSecret,
         code,
         grant_type: 'authorization_code',
-        redirect_uri: env.TIKTOK_REDIRECT_URI
+        redirect_uri: o.redirectUri
       })
     })
 
@@ -73,14 +75,15 @@ export class TikTokConnector implements PlatformConnector {
   }
 
   async refreshTokens(refreshToken: string): Promise<OAuthTokens> {
+    const o = getTikTokOAuth()
     const response = await fetch(TOKEN_URL, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded'
       },
       body: new URLSearchParams({
-        client_key: env.TIKTOK_CLIENT_ID,
-        client_secret: env.TIKTOK_CLIENT_SECRET,
+        client_key: o.clientKey,
+        client_secret: o.clientSecret,
         grant_type: 'refresh_token',
         refresh_token: refreshToken
       })
@@ -132,6 +135,7 @@ export class TikTokConnector implements PlatformConnector {
   }
 
   async revokeToken(accessToken: string): Promise<void> {
+    const o = getTikTokOAuth()
     const response = await fetch(REVOKE_URL, {
       method: 'POST',
       headers: {
@@ -139,8 +143,8 @@ export class TikTokConnector implements PlatformConnector {
         'Content-Type': 'application/x-www-form-urlencoded'
       },
       body: new URLSearchParams({
-        client_key: env.TIKTOK_CLIENT_ID,
-        client_secret: env.TIKTOK_CLIENT_SECRET,
+        client_key: o.clientKey,
+        client_secret: o.clientSecret,
         token: accessToken
       })
     })

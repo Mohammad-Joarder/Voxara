@@ -2,6 +2,7 @@ import { createEnv } from '@t3-oss/env-nextjs'
 import { z } from 'zod'
 
 export const env = createEnv({
+  emptyStringAsUndefined: true,
   server: {
     DATABASE_URL: z.string().url('DATABASE_URL must be a valid PostgreSQL URL'),
     SUPABASE_SERVICE_ROLE_KEY: z
@@ -10,20 +11,16 @@ export const env = createEnv({
     ENCRYPTION_KEY: z
       .string()
       .regex(/^[a-f0-9]{64}$/i, 'ENCRYPTION_KEY must be a 32-byte hex string'),
-    YOUTUBE_CLIENT_ID: z.string().min(1, 'YOUTUBE_CLIENT_ID is required'),
-    YOUTUBE_CLIENT_SECRET: z.string().min(1, 'YOUTUBE_CLIENT_SECRET is required'),
-    YOUTUBE_REDIRECT_URI: z.string().url('YOUTUBE_REDIRECT_URI must be a valid URL'),
-    TIKTOK_CLIENT_ID: z.string().min(1, 'TIKTOK_CLIENT_ID is required'),
-    TIKTOK_CLIENT_SECRET: z.string().min(1, 'TIKTOK_CLIENT_SECRET is required'),
-    TIKTOK_REDIRECT_URI: z.string().url('TIKTOK_REDIRECT_URI must be a valid URL'),
-    INSTAGRAM_CLIENT_ID: z.string().min(1, 'INSTAGRAM_CLIENT_ID is required'),
-    INSTAGRAM_CLIENT_SECRET: z
-      .string()
-      .min(1, 'INSTAGRAM_CLIENT_SECRET is required'),
-    INSTAGRAM_REDIRECT_URI: z
-      .string()
-      .url('INSTAGRAM_REDIRECT_URI must be a valid URL'),
-    NEXTAUTH_SECRET: z.string().min(1, 'NEXTAUTH_SECRET is required')
+    YOUTUBE_CLIENT_ID: z.string().min(1).optional(),
+    YOUTUBE_CLIENT_SECRET: z.string().min(1).optional(),
+    YOUTUBE_REDIRECT_URI: z.string().url().optional(),
+    TIKTOK_CLIENT_ID: z.string().min(1).optional(),
+    TIKTOK_CLIENT_SECRET: z.string().min(1).optional(),
+    TIKTOK_REDIRECT_URI: z.string().url().optional(),
+    INSTAGRAM_CLIENT_ID: z.string().min(1).optional(),
+    INSTAGRAM_CLIENT_SECRET: z.string().min(1).optional(),
+    INSTAGRAM_REDIRECT_URI: z.string().url().optional(),
+    NEXTAUTH_SECRET: z.string().min(1).optional()
   },
   client: {
     NEXT_PUBLIC_SUPABASE_URL: z
