@@ -16,19 +16,6 @@ function postLoginPath(consentAiAnalysis: boolean) {
   return consentAiAnalysis ? '/dashboard' : '/onboarding'
 }
 
-function describeEmailSendError(
-  supabaseErrorMessage: string,
-  callbackUrl: string
-): { title: string; description: string } {
-  const m = supabaseErrorMessage
-  if (/confirmation email|sending|smtp|email/i.test(m) || m.length < 5) {
-    return {
-      title: 'Failed to send login link',
-      description: `${m} — In Supabase → Authentication → URL: Site URL and redirect ${callbackUrl} (see docs). For mail delivery, set Custom SMTP (Auth → Emails).`
-    }
-  }
-  return { title: 'Failed to send login link', description: m }
-}
 
 function LoginContent() {
   const [email, setEmail] = useState('')
@@ -90,18 +77,19 @@ function LoginContent() {
     }
     setLoading(true)
     try {
-      const emailRedirectTo = getAuthCallbackUrl() ?? `${window.location.origin}/auth/confirm`
-      const { error } = await supabase.auth.signInWithOtp({
-        email,
-        options: {
-          emailRedirectTo,
-          shouldCreateUser: true
-        }
+      const redirectTo = getAuthCallbackUrl() ?? `${window.location.origin}/auth/confirm`
+      const res = await fetch('/api/auth/magic-link', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, redirectTo })
       })
-
-      if (error) {
-        const { title, description } = describeEmailSendError(error.message, emailRedirectTo)
-        showToast({ title, description, variant: 'error' })
+      const payload = (await res.json()) as { error?: string }
+      if (!res.ok) {
+        showToast({
+          title: 'Failed to send login link',
+          description: payload.error ?? 'Request failed',
+          variant: 'error'
+        })
         return
       }
 

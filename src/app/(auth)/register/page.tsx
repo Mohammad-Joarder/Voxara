@@ -10,20 +10,18 @@ import { Card } from '@/components/ui/Card'
 import { Input } from '@/components/ui/Input'
 import { useToast } from '@/components/ui/Toast'
 import { getAuthCallbackUrl } from '@/lib/auth-callback'
+import { setSessionIfTokens } from '@/lib/auth-client-helpers'
 import { createSupabaseBrowserClient } from '@/lib/supabase-client'
 
 function postOnboardingPath(consentAiAnalysis: boolean) {
   return consentAiAnalysis ? '/dashboard' : '/onboarding'
 }
 
-function describeOtpError(message: string, callbackUrl: string) {
-  if (/confirmation email|sending|smtp|email/i.test(message) || message.length < 5) {
-    return {
-      title: 'Could not send the link',
-      description: `${message} In Supabase → Authentication → URL: set Site URL to ${window.location.origin} and add this redirect: ${callbackUrl}. Turn on Custom SMTP (Auth → Emails) if mail still fails.`
-    }
+function emailSendErrorCopy(message: string) {
+  return {
+    title: 'Could not send the link' as const,
+    description: message
   }
-  return { title: 'Could not send the link', description: message }
 }
 
 function RegisterContent() {
@@ -109,32 +107,36 @@ function RegisterContent() {
     setRegisterLoading(true)
     try {
       const redirectTo = getAuthCallbackUrl() ?? `${window.location.origin}/auth/confirm`
-      const { data, error } = await supabase.auth.signUp({
-        email: email.trim(),
-        password,
-        options: {
-          emailRedirectTo: redirectTo,
-          data: { displayName: name.trim() || undefined }
-        }
+      const data: Record<string, unknown> = {}
+      if (name.trim()) {
+        data.displayName = name.trim()
+      }
+      const res = await fetch('/api/auth/signup-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email.trim(), password, redirectTo, data })
       })
-      if (error) {
-        const friendly =
-          /already|registered|exists/i.test(error.message) ? ' Try signing in instead.' : ''
+      const payload = (await res.json()) as { data?: { auth: Record<string, unknown> }; error?: string; code?: string }
+      if (!res.ok) {
+        const m = payload.error ?? 'Sign up failed'
+        const friendly = /already|registered|exists/i.test(m) ? ' Try signing in instead.' : ''
         showToast({
           title: 'Could not create account',
-          description: error.message + friendly,
+          description: m + friendly,
           variant: 'error'
         })
         return
       }
-      if (data.session) {
+      const auth = payload.data?.auth
+      const withSession = await setSessionIfTokens(supabase, auth)
+      if (withSession.ok) {
         showToast({ title: 'Account created', description: 'Setting up your profile…', variant: 'info' })
         await afterSessionBootstrap()
         return
       }
       showToast({
         title: 'Check your email',
-        description: 'We sent a confirmation link to complete sign-up. Open it on this device in the same browser if possible.',
+        description: 'We sent a confirmation link to complete sign-up.',
         variant: 'success'
       })
     } finally {
@@ -149,14 +151,16 @@ function RegisterContent() {
     }
     setMagicLoading(true)
     try {
-      const emailRedirectTo = getAuthCallbackUrl() ?? `${window.location.origin}/auth/confirm`
-      const { error } = await supabase.auth.signInWithOtp({
-        email: email.trim(),
-        options: { emailRedirectTo, shouldCreateUser: true }
+      const redirectTo = getAuthCallbackUrl() ?? `${window.location.origin}/auth/confirm`
+      const res = await fetch('/api/auth/magic-link', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email.trim(), redirectTo })
       })
-      if (error) {
-        const { title, description } = describeOtpError(error.message, emailRedirectTo)
-        showToast({ title, description, variant: 'error' })
+      const payload = (await res.json()) as { data?: { sent: boolean }; error?: string }
+      if (!res.ok) {
+        const t = emailSendErrorCopy(payload.error ?? 'Request failed')
+        showToast({ ...t, variant: 'error' })
         return
       }
       showToast({
