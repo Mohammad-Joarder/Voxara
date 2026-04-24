@@ -10,9 +10,35 @@ import { Card } from '@/components/ui/Card'
 import { Input } from '@/components/ui/Input'
 import { useToast } from '@/components/ui/Toast'
 import { createSupabaseBrowserClient } from '@/lib/supabase-client'
+import { getSupabaseOtpClient } from '@/lib/supabase-otp'
 
 function postLoginPath(consentAiAnalysis: boolean) {
   return consentAiAnalysis ? '/dashboard' : '/onboarding'
+}
+
+/**
+ * Use the current site origin (not NEXT_PUBLIC_APP_URL) so the redirect in the request always
+ * matches the page the user is on, and the exact URL is easy to add in Supabase allow list.
+ */
+function getAuthConfirmUrl() {
+  if (typeof window === 'undefined') {
+    return null
+  }
+  return `${window.location.origin}/auth/confirm`
+}
+
+function describeEmailSendError(
+  supabaseErrorMessage: string,
+  authConfirmUrl: string
+): { title: string; description: string } {
+  const m = supabaseErrorMessage
+  if (/confirmation email|sending|smtp|email/i.test(m) || m.length < 5) {
+    return {
+      title: 'Failed to send login link',
+      description: `${m} — In Supabase: Authentication → URL configuration: set Site URL to your app origin, and add this exact redirect URL: ${authConfirmUrl}. If email still fails, enable Custom SMTP (Auth → Emails) or check Auth rate limits.`
+    }
+  }
+  return { title: 'Failed to send login link', description: m }
 }
 
 function LoginContent() {
@@ -75,18 +101,18 @@ function LoginContent() {
     }
     setLoading(true)
     try {
-      const redirectTo = `${window.location.origin}/auth/confirm`
-      const { error } = await supabase.auth.signInWithOtp({
+      const emailRedirectTo = getAuthConfirmUrl() ?? `${window.location.origin}/auth/confirm`
+      const { error } = await getSupabaseOtpClient().auth.signInWithOtp({
         email,
-        options: { emailRedirectTo: redirectTo }
+        options: {
+          emailRedirectTo,
+          shouldCreateUser: true
+        }
       })
 
       if (error) {
-        showToast({
-          title: 'Failed to send login link',
-          description: error.message,
-          variant: 'error'
-        })
+        const { title, description } = describeEmailSendError(error.message, emailRedirectTo)
+        showToast({ title, description, variant: 'error' })
         return
       }
 
@@ -149,7 +175,7 @@ function LoginContent() {
   const handleGoogleLogin = async () => {
     setGoogleLoading(true)
     try {
-      const redirectTo = `${window.location.origin}/auth/confirm`
+      const redirectTo = getAuthConfirmUrl() ?? `${window.location.origin}/auth/confirm`
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: { redirectTo }
