@@ -18,12 +18,7 @@ function isApiPath(pathname: string) {
 }
 
 function isUnprotectedApi(pathname: string) {
-  return (
-    pathname.startsWith('/api/auth/callback/') ||
-    pathname === '/api/health' ||
-    pathname === '/api/auth/magic-link' ||
-    pathname === '/api/auth/signup-password'
-  )
+  return pathname.startsWith('/api/auth/callback/') || pathname === '/api/health'
 }
 
 function isProtectedDashboard(pathname: string) {

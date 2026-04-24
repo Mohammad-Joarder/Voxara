@@ -16,7 +16,6 @@ function postLoginPath(consentAiAnalysis: boolean) {
   return consentAiAnalysis ? '/dashboard' : '/onboarding'
 }
 
-
 function LoginContent() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -77,17 +76,19 @@ function LoginContent() {
     }
     setLoading(true)
     try {
-      const redirectTo = getAuthCallbackUrl() ?? `${window.location.origin}/auth/confirm`
-      const res = await fetch('/api/auth/magic-link', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, redirectTo })
+      const emailRedirectTo = getAuthCallbackUrl() ?? `${window.location.origin}/auth/confirm`
+      const { error } = await supabase.auth.signInWithOtp({
+        email: email.trim(),
+        options: {
+          emailRedirectTo: emailRedirectTo,
+          shouldCreateUser: true
+        }
       })
-      const payload = (await res.json()) as { error?: string }
-      if (!res.ok) {
+
+      if (error) {
         showToast({
           title: 'Failed to send login link',
-          description: payload.error ?? 'Request failed',
+          description: error.message,
           variant: 'error'
         })
         return
