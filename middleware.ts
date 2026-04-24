@@ -18,7 +18,11 @@ function isApiPath(pathname: string) {
 }
 
 function isUnprotectedApi(pathname: string) {
-  return pathname.startsWith('/api/auth/callback/') || pathname === '/api/health'
+  return (
+    pathname.startsWith('/api/auth/callback/') ||
+    pathname === '/api/health' ||
+    pathname === '/api/auth/register-magic-link'
+  )
 }
 
 function isProtectedDashboard(pathname: string) {
@@ -121,3 +125,4 @@ export async function middleware(request: NextRequest) {
 export const config = {
   matcher: ['/((?!_next/static|_next/image|favicon.ico).*)']
 }
+

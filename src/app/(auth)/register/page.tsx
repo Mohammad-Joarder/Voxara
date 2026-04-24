@@ -139,13 +139,19 @@ function RegisterContent() {
     }
     setMagicLoading(true)
     try {
-      const emailRedirectTo = getAuthCallbackUrl() ?? `${window.location.origin}/auth/confirm`
-      const { error } = await supabase.auth.signInWithOtp({
-        email: email.trim(),
-        options: { emailRedirectTo, shouldCreateUser: true }
+      const redirectTo = getAuthCallbackUrl() ?? `${window.location.origin}/auth/confirm`
+      const response = await fetch('/api/auth/register-magic-link', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email.trim(), redirectTo })
       })
-      if (error) {
-        showToast({ title: 'Could not send the link', description: error.message, variant: 'error' })
+      const payload = (await response.json()) as { error?: string }
+      if (!response.ok) {
+        showToast({
+          title: 'Could not send the link',
+          description: payload.error ?? 'Request failed',
+          variant: 'error'
+        })
         return
       }
       showToast({
@@ -276,3 +282,4 @@ export default function RegisterPage() {
     </Suspense>
   )
 }
+
