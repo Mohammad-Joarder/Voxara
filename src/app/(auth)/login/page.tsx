@@ -11,7 +11,6 @@ import { Input } from '@/components/ui/Input'
 import { useToast } from '@/components/ui/Toast'
 import { getAuthCallbackUrl } from '@/lib/auth-callback'
 import { createSupabaseBrowserClient } from '@/lib/supabase-client'
-import { getSupabaseOtpClient } from '@/lib/supabase-otp'
 
 function postLoginPath(consentAiAnalysis: boolean) {
   return consentAiAnalysis ? '/dashboard' : '/onboarding'
@@ -92,7 +91,7 @@ function LoginContent() {
     setLoading(true)
     try {
       const emailRedirectTo = getAuthCallbackUrl() ?? `${window.location.origin}/auth/confirm`
-      const { error } = await getSupabaseOtpClient().auth.signInWithOtp({
+      const { error } = await supabase.auth.signInWithOtp({
         email,
         options: {
           emailRedirectTo,
