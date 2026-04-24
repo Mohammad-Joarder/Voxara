@@ -1,15 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
 
-import { env } from '@/env'
-import { prisma } from '@/lib/prisma'
+import { ensureCreatorForUser } from '@/lib/ensure-creator'
 import { createSupabaseServerClient } from '@/lib/supabase-server'
 
-function redirectTo(path: string) {
-  return NextResponse.redirect(new URL(path, env.NEXT_PUBLIC_APP_URL))
-}
-
-function getDisplayNameFromEmail(email: string) {
-  return email.split('@')[0]?.replace(/[._-]/g, ' ') || 'Creator'
+/**
+ * Build redirect on the *same host* the user used (required for Netlify and custom domains).
+ * Using only env.NEXT_PUBLIC_APP_URL can send people to localhost or the wrong site after
+ * they click the email link.
+ */
+function redirectToRequest(request: NextRequest, path: string) {
+  return NextResponse.redirect(new URL(path, request.nextUrl.origin))
 }
 
 export async function GET(request: NextRequest) {
@@ -23,18 +23,18 @@ export async function GET(request: NextRequest) {
     if (tokenHash && type) {
       const { error } = await supabase.auth.verifyOtp({
         token_hash: tokenHash,
-        type: type as 'email' | 'recovery' | 'invite' | 'email_change'
+        type: type as 'email' | 'recovery' | 'invite' | 'email_change' | 'signup' | 'magiclink'
       })
       if (error) {
-        return redirectTo(`/login?error=${encodeURIComponent(error.message)}`)
+        return redirectToRequest(request, `/login?error=${encodeURIComponent(error.message)}`)
       }
     } else if (code) {
       const { error } = await supabase.auth.exchangeCodeForSession(code)
       if (error) {
-        return redirectTo(`/login?error=${encodeURIComponent(error.message)}`)
+        return redirectToRequest(request, `/login?error=${encodeURIComponent(error.message)}`)
       }
     } else {
-      return redirectTo('/login?error=invalid_auth_link')
+      return redirectToRequest(request, '/login?error=invalid_auth_link')
     }
 
     const {
@@ -42,24 +42,17 @@ export async function GET(request: NextRequest) {
     } = await supabase.auth.getUser()
 
     if (!user?.email) {
-      return redirectTo('/login?error=user_not_found')
+      return redirectToRequest(request, '/login?error=user_not_found')
     }
 
-    const creator = await prisma.creator.upsert({
-      where: { id: user.id },
-      update: {
-        email: user.email
-      },
-      create: {
-        id: user.id,
-        email: user.email,
-        displayName: getDisplayNameFromEmail(user.email)
-      },
-      select: { consentAiAnalysis: true }
+    const creator = await ensureCreatorForUser({
+      id: user.id,
+      email: user.email,
+      user_metadata: user.user_metadata
     })
 
     const nextPath = creator.consentAiAnalysis ? '/dashboard' : '/onboarding'
-    return redirectTo(nextPath)
+    return redirectToRequest(request, nextPath)
   } catch (error) {
     const raw = error instanceof Error ? error.message : 'Authentication confirmation failed'
     const isDbUnreachable =
@@ -67,6 +60,6 @@ export async function GET(request: NextRequest) {
     const message = isDbUnreachable
       ? 'Your account was verified, but the app cannot reach the database. Check DATABASE_URL, that your Supabase project is not paused, and your network allows outbound database connections.'
       : raw
-    return redirectTo(`/login?error=${encodeURIComponent(message)}`)
+    return redirectToRequest(request, `/login?error=${encodeURIComponent(message)}`)
   }
 }

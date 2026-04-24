@@ -34,7 +34,7 @@ export default function HomePage() {
         </div>
         <div className='border-t border-surface-200 bg-surface-50/50 px-8 py-6 md:px-10'>
           <div className='flex flex-col gap-3 sm:flex-row'>
-            <Link href='/login' className='sm:flex-1'>
+            <Link href='/register' className='sm:flex-1'>
               <Button variant='accent' className='w-full' size='lg' type='button'>
                 Get started
               </Button>

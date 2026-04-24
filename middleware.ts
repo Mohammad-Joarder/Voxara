@@ -3,10 +3,14 @@ import { NextResponse, type NextRequest } from 'next/server'
 
 import { env } from '@/env'
 
-const PUBLIC_PATHS = new Set(['/', '/login', '/privacy', '/terms'])
+const PUBLIC_PATHS = new Set(['/', '/login', '/register', '/privacy', '/terms'])
 
 function isPublicPath(pathname: string) {
-  return PUBLIC_PATHS.has(pathname) || pathname.startsWith('/onboarding')
+  return (
+    PUBLIC_PATHS.has(pathname) ||
+    pathname.startsWith('/onboarding') ||
+    pathname.startsWith('/auth/')
+  )
 }
 
 function isApiPath(pathname: string) {
