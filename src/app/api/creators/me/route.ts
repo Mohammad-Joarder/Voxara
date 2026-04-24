@@ -70,14 +70,23 @@ export async function PATCH(request: Request) {
     }
 
     const data = parsed.data
+
+    const update: {
+      displayName?: string
+      consentAiAnalysis?: boolean
+      consentAcceptedAt?: Date | null
+      dataRetentionDays?: number
+    } = {}
+    if (data.displayName !== undefined) update.displayName = data.displayName
+    if (data.consentAiAnalysis !== undefined) update.consentAiAnalysis = data.consentAiAnalysis
+    if (data.consentAcceptedAt !== undefined) {
+      update.consentAcceptedAt = data.consentAcceptedAt ? new Date(data.consentAcceptedAt) : null
+    }
+    if (data.dataRetentionDays !== undefined) update.dataRetentionDays = data.dataRetentionDays
+
     const updated = await prisma.creator.upsert({
       where: { id: user.id },
-      update: {
-        displayName: data.displayName,
-        consentAiAnalysis: data.consentAiAnalysis,
-        consentAcceptedAt: data.consentAcceptedAt ? new Date(data.consentAcceptedAt) : undefined,
-        dataRetentionDays: data.dataRetentionDays
-      },
+      update,
       create: {
         id: user.id,
         email: user.email ?? `${user.id}@unknown.local`,

@@ -11,9 +11,15 @@ import { Input } from '@/components/ui/Input'
 import { useToast } from '@/components/ui/Toast'
 import { createSupabaseBrowserClient } from '@/lib/supabase-client'
 
+function postLoginPath(consentAiAnalysis: boolean) {
+  return consentAiAnalysis ? '/dashboard' : '/onboarding'
+}
+
 function LoginContent() {
   const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
+  const [passwordLoading, setPasswordLoading] = useState(false)
   const [googleLoading, setGoogleLoading] = useState(false)
   const searchParams = useSearchParams()
   const router = useRouter()
@@ -40,18 +46,33 @@ function LoginContent() {
         return
       }
 
-      const response = await fetch('/api/creators/me')
+      const response = await fetch('/api/creators/me', { cache: 'no-store' })
+      if (response.status === 401) {
+        return
+      }
       if (response.ok) {
-        router.replace('/dashboard')
-      } else {
+        const payload = (await response.json()) as {
+          data: { creator: { consentAiAnalysis: boolean } }
+        }
+        router.replace(postLoginPath(payload.data.creator.consentAiAnalysis))
+        return
+      }
+      if (response.status === 404) {
         router.replace('/onboarding')
       }
     }
     void checkSession()
   }, [router, supabase])
 
-  const handleMagicLink = async (event: FormEvent) => {
-    event.preventDefault()
+  const handleMagicLink = async () => {
+    if (!email.trim()) {
+      showToast({
+        title: 'Email required',
+        description: 'Enter your email to receive a login link.',
+        variant: 'error'
+      })
+      return
+    }
     setLoading(true)
     try {
       const redirectTo = `${window.location.origin}/auth/confirm`
@@ -76,6 +97,52 @@ function LoginContent() {
       })
     } finally {
       setLoading(false)
+    }
+  }
+
+  const handlePasswordSignIn = async (event: FormEvent) => {
+    event.preventDefault()
+    setPasswordLoading(true)
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password
+      })
+      if (error) {
+        showToast({
+          title: 'Sign in failed',
+          description: error.message,
+          variant: 'error'
+        })
+        return
+      }
+      if (!data.session) {
+        showToast({
+          title: 'Sign in failed',
+          description: 'No session was created.',
+          variant: 'error'
+        })
+        return
+      }
+      const response = await fetch('/api/creators/me', { cache: 'no-store' })
+      if (response.status === 404) {
+        router.replace('/onboarding')
+        return
+      }
+      if (response.ok) {
+        const payload = (await response.json()) as {
+          data: { creator: { consentAiAnalysis: boolean } }
+        }
+        router.replace(postLoginPath(payload.data.creator.consentAiAnalysis))
+        return
+      }
+      showToast({
+        title: 'Sign in failed',
+        description: 'Could not load your account.',
+        variant: 'error'
+      })
+    } finally {
+      setPasswordLoading(false)
     }
   }
 
@@ -109,7 +176,7 @@ function LoginContent() {
         <p className='mt-2 text-sm leading-relaxed text-surface-600'>
           Sign in to your dashboard and hear what your audience is really saying.
         </p>
-        <form className='mt-6 space-y-4' onSubmit={handleMagicLink}>
+        <form className='mt-6 space-y-4' onSubmit={handlePasswordSignIn}>
           <Input
             label='Email'
             type='email'
@@ -117,12 +184,32 @@ function LoginContent() {
             value={email}
             onChange={(event) => setEmail(event.target.value)}
             placeholder='you@creator.com'
+            autoComplete='email'
           />
-          <Button className='w-full' loading={loading} type='submit'>
-            Send login link
+          <Input
+            label='Password'
+            type='password'
+            required
+            value={password}
+            onChange={(event) => setPassword(event.target.value)}
+            placeholder='••••••••'
+            autoComplete='current-password'
+          />
+          <Button className='w-full' loading={passwordLoading} type='submit'>
+            Sign in
           </Button>
         </form>
-        <div className='my-5 text-center text-xs uppercase text-surface-400'>or</div>
+        <div className='my-4 text-center text-xs font-medium uppercase text-surface-400'>or</div>
+        <Button
+          className='w-full'
+          variant='secondary'
+          loading={loading}
+          type='button'
+          onClick={() => void handleMagicLink()}
+        >
+          Email me a login link
+        </Button>
+        <div className='my-4 text-center text-xs uppercase text-surface-400'>or</div>
         <Button
           className='w-full'
           variant='secondary'

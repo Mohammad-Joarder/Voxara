@@ -12,6 +12,7 @@ import { cn } from '@/lib/utils'
 type CreatorSummary = {
   displayName: string
   avatarUrl: string | null
+  consentAiAnalysis: boolean
 }
 
 const navItems = [
@@ -48,6 +49,10 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
         const payload = (await creatorResponse.json()) as {
           data: { creator: CreatorSummary }
         }
+        if (!payload.data.creator.consentAiAnalysis) {
+          router.replace('/onboarding')
+          return
+        }
         setCreator(payload.data.creator)
       }
 
@@ -58,7 +63,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
       }
     }
     void loadHeaderData()
-  }, [pathname])
+  }, [pathname, router])
 
   const pageTitle = useMemo(() => {
     const matched = navItems.find((item) => pathname === item.href)

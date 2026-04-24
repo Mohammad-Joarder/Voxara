@@ -80,9 +80,17 @@ export async function middleware(request: NextRequest) {
   const protectedPage = isProtectedDashboard(pathname)
   const publicPage = isPublicPath(pathname)
 
-  if ((protectedApi || protectedPage) && !user) {
-    const loginUrl = new URL('/login', request.url)
-    return NextResponse.redirect(loginUrl)
+  if (!user) {
+    if (protectedPage) {
+      const loginUrl = new URL('/login', request.url)
+      return NextResponse.redirect(loginUrl)
+    }
+    if (protectedApi) {
+      return NextResponse.json(
+        { error: 'Authentication required', code: 'UNAUTHORIZED' },
+        { status: 401 }
+      )
+    }
   }
 
   if (!publicPage && !protectedApi && !protectedPage) {

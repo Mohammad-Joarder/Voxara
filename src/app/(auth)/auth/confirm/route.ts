@@ -45,12 +45,7 @@ export async function GET(request: NextRequest) {
       return redirectTo('/login?error=user_not_found')
     }
 
-    const existing = await prisma.creator.findUnique({
-      where: { id: user.id },
-      select: { id: true }
-    })
-
-    await prisma.creator.upsert({
+    const creator = await prisma.creator.upsert({
       where: { id: user.id },
       update: {
         email: user.email
@@ -59,12 +54,19 @@ export async function GET(request: NextRequest) {
         id: user.id,
         email: user.email,
         displayName: getDisplayNameFromEmail(user.email)
-      }
+      },
+      select: { consentAiAnalysis: true }
     })
 
-    return redirectTo(existing ? '/dashboard' : '/onboarding')
+    const nextPath = creator.consentAiAnalysis ? '/dashboard' : '/onboarding'
+    return redirectTo(nextPath)
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Authentication confirmation failed'
+    const raw = error instanceof Error ? error.message : 'Authentication confirmation failed'
+    const isDbUnreachable =
+      /Can't reach database server|P1001|connect ECONNREFUSED|ETIMEDOUT|ENOTFOUND/i.test(raw)
+    const message = isDbUnreachable
+      ? 'Your account was verified, but the app cannot reach the database. Check DATABASE_URL, that your Supabase project is not paused, and your network allows outbound database connections.'
+      : raw
     return redirectTo(`/login?error=${encodeURIComponent(message)}`)
   }
 }

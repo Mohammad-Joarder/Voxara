@@ -52,7 +52,7 @@ function OnboardingContent() {
   )
 
   const loadAccounts = async () => {
-    const response = await fetch('/api/creators/me', { cache: 'no-store' })
+    const response = await fetch('/api/creators/me', { cache: 'no-store', credentials: 'include' })
     if (!response.ok) {
       return
     }
@@ -93,14 +93,25 @@ function OnboardingContent() {
       const response = await fetch('/api/creators/me', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({
           consentAiAnalysis: true,
           consentAcceptedAt: new Date().toISOString()
         })
       })
       if (!response.ok) {
+        let description = 'Please try again or sign out and sign in again.'
+        try {
+          const err = (await response.json()) as { error?: string; code?: string }
+          if (err.error) {
+            description = err.error
+          }
+        } catch {
+          // ignore
+        }
         showToast({
           title: 'Could not save consent',
+          description,
           variant: 'error'
         })
         return
